@@ -11,6 +11,8 @@ uses
   System.Classes,
   CryptoKit,
   CryptoKit.Facade,
+  CryptoKit.Factory,
+  CryptoKit.Interfaces,
   CryptoKit.Types,
   CryptoKit.Encoding;
 
@@ -29,6 +31,9 @@ var
   Certs: TCryptoCertificateArray;
   Signature: TBytes;
   Signers: TCryptoCertificateArray;
+  SignerCerts: TCryptoBytesArray;
+  CompatCrypt: ICryptoService;
+  ReusableSigner: IExtendedWinApiCryptService;
 begin
   PlainText := 'Delphi CryptoKit sample';
   PlainBytes := TEncoding.UTF8.GetBytes(PlainText);
@@ -53,11 +58,28 @@ begin
   Certs := TCryptoKit.GetPersonalCertificates(True, slCurrentUser);
   if Length(Certs) > 0 then
   begin
+    Writeln('Signer is GOST   : ' + BoolToStr(Certs[0].IsGost, True));
+    Writeln('Sign OID         : ' + Certs[0].SignatureAlgorithmOid);
+
+    // Совместимый контракт с оригинальным ICrypt.
+    CompatCrypt := TCryptoFactory.CreateCryptoService;
+    Signature := CompatCrypt.Sign(PlainBytes, Certs[0].Encoded);
+    SignerCerts := CompatCrypt.VerifySignature(PlainBytes, Signature);
+    if Length(SignerCerts) > 0 then
+      Writeln('Verify cert bytes: ' + IntToStr(Length(SignerCerts[0])))
+    else
+      Writeln('Verify cert bytes: 0');
+
     Signature := TCryptoKit.SignDetached(PlainBytes, Certs[0].Encoded);
     Signers := TCryptoKit.VerifyDetached(PlainBytes, Signature);
     Writeln('Detached sign len: ' + IntToStr(Length(Signature)));
     Writeln('Signer subject   : ' + Certs[0].SubjectName);
     Writeln('Verified signers : ' + IntToStr(Length(Signers)));
+
+    // Режим повторного подписания одним сертификатом.
+    ReusableSigner := TCryptoFactory.CreateExtendedWinApiCryptService(Certs[0].Encoded);
+    Signature := ReusableSigner.Sign(PlainBytes);
+    Writeln('Reusable sign len: ' + IntToStr(Length(Signature)));
   end
   else
     Writeln('No personal certificates with private key found in CurrentUser\MY');

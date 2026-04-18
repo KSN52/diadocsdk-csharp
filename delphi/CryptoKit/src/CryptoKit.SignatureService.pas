@@ -13,11 +13,9 @@ uses
 type
   TCryptoSignatureService = class(TCryptoServiceBase, ICryptoSignatureService)
   private
-    function ResolveHashOidBySignatureOid(const ASignatureOid: string): AnsiString;
     function ResolveHashOidByCertificate(const ACertContext: PCERT_CONTEXT): AnsiString;
     function HasPrivateKey(const ACertContext: PCERT_CONTEXT): Boolean;
     function ReadCertificateHash(const ACertContext: PCERT_CONTEXT): TBytes;
-    function ReadCertificateEncoded(const ACertContext: PCERT_CONTEXT): TBytes;
     function BuildCertificateInfo(const ACertContext: PCERT_CONTEXT): TCryptoCertificate;
     function OpenStore(
       const AStoreName: string;
@@ -40,60 +38,11 @@ implementation
 
 uses
   System.AnsiStrings,
-  Winapi.WinCrypt,
   CryptoKit.CryptApi,
+  CryptoKit.Bytes,
+  CryptoKit.CertificateUtils,
   CryptoKit.Exceptions,
-  CryptoKit.Encoding,
   CryptoKit.Utils;
-
-function ByteArraysEqual(const ALeft, ARight: TBytes): Boolean;
-var
-  I: Integer;
-begin
-  if Length(ALeft) <> Length(ARight) then
-    Exit(False);
-  for I := 0 to Length(ALeft) - 1 do
-  begin
-    if ALeft[I] <> ARight[I] then
-      Exit(False);
-  end;
-  Result := True;
-end;
-
-function GetCertificateName(
-  const ACertContext: PCERT_CONTEXT;
-  const AIsIssuer: Boolean
-): string;
-var
-  NameFlags: DWORD;
-  NameLen: DWORD;
-begin
-  if AIsIssuer then
-    NameFlags := CERT_NAME_ISSUER_FLAG
-  else
-    NameFlags := 0;
-
-  NameLen := CertGetNameStringW(
-    ACertContext,
-    CERT_NAME_SIMPLE_DISPLAY_TYPE,
-    NameFlags,
-    nil,
-    nil,
-    0
-  );
-  if NameLen <= 1 then
-    Exit('');
-
-  SetLength(Result, NameLen - 1);
-  CertGetNameStringW(
-    ACertContext,
-    CERT_NAME_SIMPLE_DISPLAY_TYPE,
-    NameFlags,
-    nil,
-    PWideChar(Result),
-    NameLen
-  );
-end;
 
 function StoreLocationFlags: TArray<DWORD>;
 begin
@@ -113,98 +62,51 @@ begin
   );
 end;
 
-function TCryptoSignatureService.ResolveHashOidBySignatureOid(
-  const ASignatureOid: string
-): AnsiString;
+function CertDuplicateOrError(const ACertContext: PCERT_CONTEXT): PCERT_CONTEXT;
 begin
-  if ASignatureOid = OID_GOST_34_11_94_R3410EL then
-    Exit(AnsiString(OID_GOST_34_11_94));
-  if ASignatureOid = OID_GOST_34_11_12_256_R3410 then
-    Exit(AnsiString(OID_GOST_34_11_12_256));
-  if ASignatureOid = OID_GOST_34_11_12_512_R3410 then
-    Exit(AnsiString(OID_GOST_34_11_12_512));
-  // Для non-GOST fallback на SHA-256.
-  Result := AnsiString('2.16.840.1.101.3.4.2.1');
+  Result := CertDuplicateCertificateContext(ACertContext);
+  if Result = nil then
+    RaiseLastOSError;
 end;
 
 function TCryptoSignatureService.ResolveHashOidByCertificate(
   const ACertContext: PCERT_CONTEXT
 ): AnsiString;
-var
-  CertInfo: PCERT_INFO;
-  SignatureOid: string;
 begin
-  CertInfo := PCERT_INFO(ACertContext.pCertInfo);
-  SignatureOid := string(AnsiString(CertInfo^.SignatureAlgorithm.pszObjId));
-  Result := ResolveHashOidBySignatureOid(SignatureOid);
+  Result := CryptoKit.CertificateUtils.ResolveHashOidBySignatureOid(
+    GetCertificateSignatureAlgorithmOid(ACertContext)
+  );
 end;
 
 function TCryptoSignatureService.HasPrivateKey(
   const ACertContext: PCERT_CONTEXT
 ): Boolean;
-var
-  DataLen: DWORD;
-  LastErr: DWORD;
 begin
-  DataLen := 0;
-  Result := CertGetCertificateContextProperty(
-    ACertContext,
-    CERT_KEY_PROV_INFO_PROP_ID,
-    nil,
-    DataLen
-  );
-  if Result then
-    Exit(True);
-
-  LastErr := GetLastError;
-  if LastErr = DWORD(CRYPT_E_NOT_FOUND) then
-    Exit(False);
-  RaiseLastOSError(LastErr);
+  Result := CryptoKit.CertificateUtils.HasPrivateKey(ACertContext);
 end;
 
 function TCryptoSignatureService.ReadCertificateHash(
   const ACertContext: PCERT_CONTEXT
 ): TBytes;
-var
-  DataLen: DWORD;
 begin
-  DataLen := 0;
-  if not CertGetCertificateContextProperty(
-    ACertContext,
-    CERT_HASH_PROP_ID,
-    nil,
-    DataLen
-  ) then
-    RaiseLastOSError;
-
-  SetLength(Result, DataLen);
-  if not CertGetCertificateContextProperty(
-    ACertContext,
-    CERT_HASH_PROP_ID,
-    @Result[0],
-    DataLen
-  ) then
-    RaiseLastOSError;
+  Result := CryptoKit.CertificateUtils.ReadCertificateHash(ACertContext);
 end;
 
 function TCryptoSignatureService.ReadCertificateEncoded(
   const ACertContext: PCERT_CONTEXT
 ): TBytes;
 begin
-  SetLength(Result, ACertContext.cbCertEncoded);
-  if ACertContext.cbCertEncoded > 0 then
-    Move(ACertContext.pbCertEncoded^, Result[0], ACertContext.cbCertEncoded);
+  Result := CryptoKit.CertificateUtils.ReadCertificateEncoded(ACertContext);
 end;
 
 function TCryptoSignatureService.BuildCertificateInfo(
   const ACertContext: PCERT_CONTEXT
 ): TCryptoCertificate;
 begin
-  Result.ThumbprintHex := BytesToHex(ReadCertificateHash(ACertContext));
-  Result.SubjectName := GetCertificateName(ACertContext, False);
-  Result.IssuerName := GetCertificateName(ACertContext, True);
-  Result.HasPrivateKey := HasPrivateKey(ACertContext);
-  Result.Encoded := ReadCertificateEncoded(ACertContext);
+  Result := CryptoKit.CertificateUtils.BuildCertificateInfo(
+    ACertContext,
+    HasPrivateKey(ACertContext)
+  );
 end;
 
 function TCryptoSignatureService.OpenStore(
@@ -249,9 +151,9 @@ begin
               RaiseLastOSError;
             Break;
           end;
-          if HasPrivateKey(CertContext) and ByteArraysEqual(ReadCertificateHash(CertContext), ACertificateHash) then
+          if HasPrivateKey(CertContext) and EqualBytes(ReadCertificateHash(CertContext), ACertificateHash) then
           begin
-            Result := CertDuplicateCertificateContext(CertContext);
+            Result := CertDuplicateOrError(CertContext);
             Exit;
           end;
         end;
@@ -280,7 +182,7 @@ begin
   try
     if HasPrivateKey(InitialCert) then
     begin
-      Result := CertDuplicateCertificateContext(InitialCert);
+      Result := CertDuplicateOrError(InitialCert);
       Exit;
     end;
 

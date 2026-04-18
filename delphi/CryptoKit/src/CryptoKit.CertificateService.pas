@@ -3,7 +3,6 @@ unit CryptoKit.CertificateService;
 interface
 
 uses
-  System.SysUtils,
   System.Generics.Collections,
   Winapi.Windows,
   CryptoKit.Types,
@@ -36,50 +35,11 @@ type
 implementation
 
 uses
+  System.SysUtils,
   CryptoKit.CryptApi,
+  CryptoKit.CertificateUtils,
   CryptoKit.Exceptions,
-  CryptoKit.Encoding,
   CryptoKit.Utils;
-
-function NormalizeThumbprint(const AThumbprintHex: string): string;
-begin
-  Result := LowerCase(StringReplace(AThumbprintHex, ' ', '', [rfReplaceAll]));
-end;
-
-function GetCertificateName(
-  const ACertContext: PCERT_CONTEXT;
-  const AIsIssuer: Boolean
-): string;
-var
-  NameFlags: DWORD;
-  NameLen: DWORD;
-begin
-  if AIsIssuer then
-    NameFlags := CERT_NAME_ISSUER_FLAG
-  else
-    NameFlags := 0;
-
-  NameLen := CertGetNameStringW(
-    ACertContext,
-    CERT_NAME_SIMPLE_DISPLAY_TYPE,
-    NameFlags,
-    nil,
-    nil,
-    0
-  );
-  if NameLen <= 1 then
-    Exit('');
-
-  SetLength(Result, NameLen - 1);
-  CertGetNameStringW(
-    ACertContext,
-    CERT_NAME_SIMPLE_DISPLAY_TYPE,
-    NameFlags,
-    nil,
-    PWideChar(Result),
-    NameLen
-  );
-end;
 
 function TCryptoCertificateService.ResolveStoreFlag(
   const AStoreLocation: TCertificateStoreLocation
@@ -113,61 +73,22 @@ end;
 function TCryptoCertificateService.HasPrivateKey(
   const ACertContext: PCERT_CONTEXT
 ): Boolean;
-var
-  DataLen: DWORD;
-  LastErr: DWORD;
 begin
-  DataLen := 0;
-  Result := CertGetCertificateContextProperty(
-    ACertContext,
-    CERT_KEY_PROV_INFO_PROP_ID,
-    nil,
-    DataLen
-  );
-  if Result then
-    Exit(True);
-
-  LastErr := GetLastError;
-  if LastErr = DWORD(CRYPT_E_NOT_FOUND) then
-    Exit(False);
-  RaiseLastOSError(LastErr);
+  Result := CryptoKit.CertificateUtils.HasPrivateKey(ACertContext);
 end;
 
 function TCryptoCertificateService.ReadCertificateHashHex(
   const ACertContext: PCERT_CONTEXT
 ): string;
-var
-  DataLen: DWORD;
-  HashBytes: TBytes;
 begin
-  DataLen := 0;
-  if not CertGetCertificateContextProperty(
-    ACertContext,
-    CERT_HASH_PROP_ID,
-    nil,
-    DataLen
-  ) then
-    RaiseLastOSError;
-
-  SetLength(HashBytes, DataLen);
-  if not CertGetCertificateContextProperty(
-    ACertContext,
-    CERT_HASH_PROP_ID,
-    @HashBytes[0],
-    DataLen
-  ) then
-    RaiseLastOSError;
-
-  Result := BytesToHex(HashBytes);
+  Result := CryptoKit.CertificateUtils.ReadCertificateHashHex(ACertContext);
 end;
 
 function TCryptoCertificateService.ReadCertificateEncoded(
   const ACertContext: PCERT_CONTEXT
 ): TBytes;
 begin
-  SetLength(Result, ACertContext.cbCertEncoded);
-  if ACertContext.cbCertEncoded > 0 then
-    Move(ACertContext.pbCertEncoded^, Result[0], ACertContext.cbCertEncoded);
+  Result := CryptoKit.CertificateUtils.ReadCertificateEncoded(ACertContext);
 end;
 
 function TCryptoCertificateService.BuildCertificateInfo(
@@ -175,11 +96,7 @@ function TCryptoCertificateService.BuildCertificateInfo(
   const AHasPrivateKey: Boolean
 ): TCryptoCertificate;
 begin
-  Result.ThumbprintHex := NormalizeThumbprint(ReadCertificateHashHex(ACertContext));
-  Result.HasPrivateKey := AHasPrivateKey;
-  Result.Encoded := ReadCertificateEncoded(ACertContext);
-  Result.SubjectName := GetCertificateName(ACertContext, False);
-  Result.IssuerName := GetCertificateName(ACertContext, True);
+  Result := CryptoKit.CertificateUtils.BuildCertificateInfo(ACertContext, AHasPrivateKey);
 end;
 
 function TCryptoCertificateService.GetPersonalCertificates(

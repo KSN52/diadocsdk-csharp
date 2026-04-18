@@ -62,15 +62,56 @@ begin
 end;
 ```
 
-## 4) Вспомогательные сценарии (при необходимости)
+## 4) Совместимый контракт как в оригинальном ICrypt
+
+Для максимальной совместимости используйте `ICryptoService`:
+
+```pascal
+var
+  Crypt: ICryptoService;
+  Signature: TBytes;
+  SignerCerts: TCryptoBytesArray;
+begin
+  Crypt := TCryptoFactory.CreateCryptoService;
+  Signature := Crypt.Sign(Content, Cert.Encoded);
+  SignerCerts := Crypt.VerifySignature(Content, Signature);
+end;
+```
+
+Также поддержан reusable-подписант, аналог `ExtendedWinApiCrypt`:
+
+```pascal
+var
+  ReusableSigner: IExtendedWinApiCryptService;
+  Signature: TBytes;
+begin
+  ReusableSigner := TCryptoFactory.CreateExtendedWinApiCryptService(Cert.Encoded);
+  Signature := ReusableSigner.Sign(Content);
+end;
+```
+
+## 5) Расшифрование через личный сертификат
+
+```pascal
+var
+  Crypt: ICryptoService;
+  Decrypted: TBytes;
+begin
+  Crypt := TCryptoFactory.CreateCryptoService;
+  Decrypted := Crypt.Decrypt(EncryptedBlob, slCurrentUser);
+end;
+```
+
+## 6) Вспомогательные сценарии (при необходимости)
 
 - Hash: контроль целостности.
 - HMAC: подпись внутренних сервисных сообщений.
 - PBKDF2 + AES: локальное шифрование данных приложения.
 - RNG: генерация salt/IV/токенов.
 
-## 5) Что важно для обратной совместимости
+## 7) Что важно для обратной совместимости
 
 - Формат detached-подписи CMS/PKCS#7 должен оставаться неизменным.
 - Thumbprint сертификата храните в нормализованном виде (hex без пробелов, lower-case).
 - При расширении сервиса подписи добавляйте новые методы/параметры без удаления существующих контрактов.
+- Приоритет выбора хэш-алгоритма подписи для ГОСТ-сертификатов должен оставаться по OID сертификата.

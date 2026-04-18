@@ -3,11 +3,16 @@ unit CryptoKit.Factory;
 interface
 
 uses
+  CryptoKit.Types,
   CryptoKit.Interfaces;
 
 type
   TCryptoFactory = class
   public
+    class function CreateCryptoService: ICryptoService; static;
+    class function CreateExtendedWinApiCryptService(
+      const ACertificateEncoded: TBytes
+    ): IExtendedWinApiCryptService; static;
     class function CreateHashService: ICryptoHashService; static;
     class function CreateKdfService: ICryptoKdfService; static;
     class function CreateCipherService: ICryptoCipherService; static;
@@ -19,12 +24,26 @@ type
 implementation
 
 uses
+  CryptoKit.ExtendedWinApiCryptService,
+  CryptoKit.WinApiCryptService,
   CryptoKit.HashService,
   CryptoKit.KdfService,
   CryptoKit.CipherService,
   CryptoKit.RandomService,
   CryptoKit.CertificateService,
   CryptoKit.SignatureService;
+
+class function TCryptoFactory.CreateCryptoService: ICryptoService;
+begin
+  Result := TCryptoWinApiCryptService.Create;
+end;
+
+class function TCryptoFactory.CreateExtendedWinApiCryptService(
+  const ACertificateEncoded: TBytes
+): IExtendedWinApiCryptService;
+begin
+  Result := TCryptoExtendedWinApiCryptService.Create(ACertificateEncoded);
+end;
 
 class function TCryptoFactory.CreateHashService: ICryptoHashService;
 begin

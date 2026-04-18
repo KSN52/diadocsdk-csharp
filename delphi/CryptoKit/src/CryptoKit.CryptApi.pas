@@ -9,6 +9,8 @@ type
   PPCERT_CONTEXT = ^PCERT_CONTEXT;
   PPBYTE = ^PByte;
   PDWORD = ^DWORD;
+  PHCERTSTORE = ^HCERTSTORE;
+  HCERTSTORE = Pointer;
   PCERT_CONTEXT = ^CERT_CONTEXT;
 
   CRYPT_DATA_BLOB = packed record
@@ -47,6 +49,14 @@ type
     hCryptProv: NativeUInt;
     pfnGetSignerCertificate: Pointer;
     pvGetArg: Pointer;
+  end;
+
+  CRYPT_DECRYPT_MESSAGE_PARA = packed record
+    cbSize: DWORD;
+    dwMsgAndCertEncodingType: DWORD;
+    cCertStore: DWORD;
+    rghCertStore: PHCERTSTORE;
+    dwFlags: DWORD;
   end;
 
   CERT_CONTEXT = packed record
@@ -110,6 +120,15 @@ function CryptVerifyDetachedMessageSignature(
   out ppSignerCert: PCERT_CONTEXT
 ): BOOL; stdcall; external 'crypt32.dll';
 
+function CryptDecryptMessage(
+  var pDecryptPara: CRYPT_DECRYPT_MESSAGE_PARA;
+  pbEncryptedBlob: PByte;
+  cbEncryptedBlob: DWORD;
+  pbDecrypted: PByte;
+  var pcbDecrypted: DWORD;
+  ppXchgCert: PPCERT_CONTEXT
+): BOOL; stdcall; external 'crypt32.dll';
+
 function CertOpenStore(
   lpszStoreProvider: Pointer;
   dwEncodingType: DWORD;
@@ -147,6 +166,19 @@ function CertGetNameStringW(
   pszNameString: PWideChar;
   cchNameString: DWORD
 ): DWORD; stdcall; external 'crypt32.dll';
+
+function CryptDecodeObject(
+  dwCertEncodingType: DWORD;
+  lpszStructType: LPCSTR;
+  const pbEncoded: PByte;
+  cbEncoded: DWORD;
+  dwFlags: DWORD;
+  pvStructInfo: Pointer;
+  var pcbStructInfo: DWORD
+): BOOL; stdcall; external 'crypt32.dll';
+
+const
+  X509_CERT = LPCSTR(1);
 
 implementation
 

@@ -10,12 +10,14 @@ uses
 type
   TCryptoKit = class
   private
+    class var FCryptoService: ICryptoService;
     class var FHashService: ICryptoHashService;
     class var FKdfService: ICryptoKdfService;
     class var FCipherService: ICryptoCipherService;
     class var FRandomService: ICryptoRandomService;
     class var FCertificateService: ICryptoCertificateService;
     class var FSignatureService: ICryptoSignatureService;
+    class function CryptoService: ICryptoService; static;
     class function HashService: ICryptoHashService; static;
     class function KdfService: ICryptoKdfService; static;
     class function CipherService: ICryptoCipherService; static;
@@ -23,6 +25,23 @@ type
     class function CertificateService: ICryptoCertificateService; static;
     class function SignatureService: ICryptoSignatureService; static;
   public
+    class function CreateExtendedWinApiCryptService(
+      const ACertificateEncoded: TBytes
+    ): IExtendedWinApiCryptService; static;
+
+    class function Sign(
+      const AContent, ACertificateEncoded: TBytes
+    ): TBytes; static;
+
+    class function VerifySignature(
+      const AContent, ASignature: TBytes
+    ): TCryptoBytesArray; static;
+
+    class function Decrypt(
+      const AEncryptedContent: TBytes;
+      const AStoreLocation: TCertificateStoreLocation = slCurrentUser
+    ): TBytes; static;
+
     class function Hash(
       const AData: TBytes;
       const AAlgorithm: TCryptoHashAlgorithm = haSHA256
@@ -71,7 +90,15 @@ type
 implementation
 
 uses
-  CryptoKit.Factory;
+  CryptoKit.Factory,
+  CryptoKit.ExtendedWinApiCryptService;
+
+class function TCryptoKit.CryptoService: ICryptoService;
+begin
+  if not Assigned(FCryptoService) then
+    FCryptoService := TCryptoFactory.CreateCryptoService;
+  Result := FCryptoService;
+end;
 
 class function TCryptoKit.HashService: ICryptoHashService;
 begin
@@ -113,6 +140,28 @@ begin
   if not Assigned(FSignatureService) then
     FSignatureService := TCryptoFactory.CreateSignatureService;
   Result := FSignatureService;
+end;
+
+class function TCryptoKit.Sign(
+  const AContent, ACertificateEncoded: TBytes
+): TBytes;
+begin
+  Result := CryptoService.Sign(AContent, ACertificateEncoded);
+end;
+
+class function TCryptoKit.VerifySignature(
+  const AContent, ASignature: TBytes
+): TCryptoBytesArray;
+begin
+  Result := CryptoService.VerifySignature(AContent, ASignature);
+end;
+
+class function TCryptoKit.Decrypt(
+  const AEncryptedContent: TBytes;
+  const AStoreLocation: TCertificateStoreLocation
+): TBytes;
+begin
+  Result := CryptoService.Decrypt(AEncryptedContent, AStoreLocation);
 end;
 
 class function TCryptoKit.Hash(
@@ -190,6 +239,13 @@ class function TCryptoKit.VerifyDetached(
 ): TCryptoCertificateArray;
 begin
   Result := SignatureService.VerifyDetached(AContent, ADetachedSignature);
+end;
+
+class function TCryptoKit.CreateExtendedWinApiCryptService(
+  const ACertificateEncoded: TBytes
+): IExtendedWinApiCryptService;
+begin
+  Result := TCryptoFactory.CreateExtendedWinApiCryptService(ACertificateEncoded);
 end;
 
 end.

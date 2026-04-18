@@ -18,11 +18,15 @@ type
     ThumbprintHex: string;
     SubjectName: string;
     IssuerName: string;
+    SignatureAlgorithmOid: string;
+    PublicKeyAlgorithmOid: string;
+    IsGost: Boolean;
     HasPrivateKey: Boolean;
     Encoded: TBytes;
   end;
 
   TCryptoCertificateArray = TArray<TCryptoCertificate>;
+  TCryptoBytesArray = TArray<TBytes>;
 
   TCryptoAesParams = record
     Key: TBytes;

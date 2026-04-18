@@ -7,6 +7,33 @@ uses
   CryptoKit.Types;
 
 type
+  ICryptoService = interface
+    ['{934245E7-A87A-4E69-A7DF-0D35598C43B5}']
+    function Sign(
+      const AContent, ACertificateEncoded: TBytes
+    ): TBytes;
+    function VerifySignature(
+      const AContent, ASignature: TBytes
+    ): TCryptoBytesArray;
+    function Decrypt(
+      const AEncryptedContent: TBytes;
+      const AStoreLocation: TCertificateStoreLocation = slCurrentUser
+    ): TBytes;
+    function GetPersonalCertificates(
+      const AOnlyWithPrivateKey: Boolean;
+      const AStoreLocation: TCertificateStoreLocation = slCurrentUser
+    ): TCryptoCertificateArray;
+    function GetCertificateWithPrivateKeyByThumbprint(
+      const AThumbprintHex: string;
+      const AStoreLocation: TCertificateStoreLocation = slCurrentUser
+    ): TCryptoCertificate;
+  end;
+
+  IExtendedWinApiCryptService = interface(ICryptoService)
+    ['{7EF29B4B-14C7-44C0-BF7B-4A57FEEE3C82}']
+    function Sign(const AContent: TBytes): TBytes; overload;
+  end;
+
   ICryptoHashService = interface
     ['{1E829D38-4B35-4F7F-AFE5-A4642B2B93A9}']
     function Hash(
