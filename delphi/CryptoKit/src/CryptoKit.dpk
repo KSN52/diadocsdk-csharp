@@ -1,0 +1,26 @@
+package CryptoKit;
+
+{$R *.res}
+
+requires
+  rtl,
+  vcl;
+
+contains
+  CryptoKit in 'CryptoKit.pas',
+  CryptoKit.Types in 'CryptoKit.Types.pas',
+  CryptoKit.Exceptions in 'CryptoKit.Exceptions.pas',
+  CryptoKit.Interfaces in 'CryptoKit.Interfaces.pas',
+  CryptoKit.Utils in 'CryptoKit.Utils.pas',
+  CryptoKit.BaseService in 'CryptoKit.BaseService.pas',
+  CryptoKit.BCryptApi in 'CryptoKit.BCryptApi.pas',
+  CryptoKit.BCryptHelpers in 'CryptoKit.BCryptHelpers.pas',
+  CryptoKit.HashService in 'CryptoKit.HashService.pas',
+  CryptoKit.KdfService in 'CryptoKit.KdfService.pas',
+  CryptoKit.CipherService in 'CryptoKit.CipherService.pas',
+  CryptoKit.RandomService in 'CryptoKit.RandomService.pas',
+  CryptoKit.Encoding in 'CryptoKit.Encoding.pas',
+  CryptoKit.Factory in 'CryptoKit.Factory.pas',
+  CryptoKit.Facade in 'CryptoKit.Facade.pas';
+
+end.
