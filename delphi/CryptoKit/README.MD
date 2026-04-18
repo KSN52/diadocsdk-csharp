@@ -1,6 +1,6 @@
 # CryptoKit (Delphi 10.3.2)
 
-Переиспользуемый модульный набор криптографии для Delphi 10.3.2 на базе Windows CNG (`bcrypt.dll`), готовый для подключения в другие проекты.
+Переиспользуемый модульный набор криптографии для Delphi 10.3.2, ориентированный в первую очередь на сценарии УКЭП (электронный документооборот, подпись, сертификаты, ключи), готовый для подключения в другие проекты.
 
 ## Очень важная информация по проекту
 
@@ -23,10 +23,13 @@ delphi/CryptoKit/
     CryptoKit.BaseService.pas
     CryptoKit.BCryptApi.pas
     CryptoKit.BCryptHelpers.pas
+    CryptoKit.CryptApi.pas
     CryptoKit.HashService.pas
     CryptoKit.KdfService.pas
     CryptoKit.CipherService.pas
     CryptoKit.RandomService.pas
+    CryptoKit.CertificateService.pas
+    CryptoKit.SignatureService.pas
     CryptoKit.Encoding.pas
     CryptoKit.Factory.pas
     CryptoKit.Facade.pas
@@ -35,7 +38,7 @@ delphi/CryptoKit/
 ### 2. Архитектура проекта
 
 - **Контрактный слой**:
-  - `CryptoKit.Interfaces.pas` — интерфейсы сервисов (`ICryptoHashService`, `ICryptoKdfService`, `ICryptoCipherService`, `ICryptoRandomService`).
+  - `CryptoKit.Interfaces.pas` — интерфейсы сервисов (`ICryptoHashService`, `ICryptoKdfService`, `ICryptoCipherService`, `ICryptoRandomService`, `ICryptoCertificateService`, `ICryptoSignatureService`).
   - `CryptoKit.Types.pas` — enum алгоритмов и параметры AES.
 - **Базовый инфраструктурный слой**:
   - `CryptoKit.Exceptions.pas` — типы исключений.
@@ -43,11 +46,14 @@ delphi/CryptoKit/
 - **Платформенный слой**:
   - `CryptoKit.BCryptApi.pas` — объявления WinAPI BCrypt.
   - `CryptoKit.BCryptHelpers.pas` — проверки `NTSTATUS`, чтение свойств алгоритмов.
+  - `CryptoKit.CryptApi.pas` — объявления WinAPI Crypt32 для PKCS#7 detached-подписи и сертификатов.
 - **Слой реализаций**:
   - `CryptoKit.HashService.pas` — SHA-256/SHA-512, HMAC.
   - `CryptoKit.KdfService.pas` — PBKDF2-HMAC-SHA256.
   - `CryptoKit.CipherService.pas` — AES-256-CBC + PKCS7.
   - `CryptoKit.RandomService.pas` — криптостойкий RNG.
+  - `CryptoKit.CertificateService.pas` — работа с сертификатами из MY-хранилища.
+  - `CryptoKit.SignatureService.pas` — detached-подпись и проверка подписи (под УКЭП сценарии).
 - **Слой интеграции и фасад**:
   - `CryptoKit.Factory.pas` — фабрика сервисов.
   - `CryptoKit.Facade.pas` — статический фасад `TCryptoKit` для быстрого использования.
@@ -81,9 +87,19 @@ delphi/CryptoKit/
   - расширить соответствующий service;
   - не удалять существующие enum/методы;
   - дополнить `USAGE_SCENARIOS.md`.
+- **Шаблон УКЭП-подписания (как в ЭДО)**:
+  1. Получить сертификаты с закрытым ключом `GetPersonalCertificates(True)`.
+  2. Выбрать сертификат по thumbprint или бизнес-правилам.
+  3. Выполнить `SignDetached(content, cert.Encoded)`.
+  4. На стороне проверки вызвать `VerifyDetached(content, signature)` и сверить signer certificate.
 
 ## Реализованные криптосценарии
 
+- УКЭП-базовые операции:
+  - перечисление личных сертификатов (CurrentUser/LocalMachine, хранилище MY);
+  - отбор сертификата по thumbprint с закрытым ключом;
+  - detached PKCS#7 подпись;
+  - проверка detached-подписи с извлечением сертификатов подписантов.
 - Hash: SHA-256, SHA-512.
 - MAC: HMAC-SHA256, HMAC-SHA512.
 - KDF: PBKDF2-HMAC-SHA256.
@@ -96,8 +112,9 @@ delphi/CryptoKit/
 - **Внутренние зависимости**: только модули `CryptoKit.*`.
 - **Внешние зависимости**:
   - `bcrypt.dll` (Windows CNG);
+  - `crypt32.dll` (Windows CryptoAPI для подписи/сертификатов);
   - `rtl`, `vcl`.
 - **Совместимость**:
   - API-модулей построен на интерфейсах и enum: возможно расширение без breaking changes;
-  - текущие алгоритмы и сигнатуры не уменьшают функциональность, а организованы в модульной структуре для упрощения поддержки.
+  - добавленные методы для сертификатов/подписи расширяют функциональность без изменения ранее добавленных методов.
 

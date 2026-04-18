@@ -12,6 +12,8 @@ type
     class function CreateKdfService: ICryptoKdfService; static;
     class function CreateCipherService: ICryptoCipherService; static;
     class function CreateRandomService: ICryptoRandomService; static;
+    class function CreateCertificateService: ICryptoCertificateService; static;
+    class function CreateSignatureService: ICryptoSignatureService; static;
   end;
 
 implementation
@@ -20,7 +22,9 @@ uses
   CryptoKit.HashService,
   CryptoKit.KdfService,
   CryptoKit.CipherService,
-  CryptoKit.RandomService;
+  CryptoKit.RandomService,
+  CryptoKit.CertificateService,
+  CryptoKit.SignatureService;
 
 class function TCryptoFactory.CreateHashService: ICryptoHashService;
 begin
@@ -40,6 +44,16 @@ end;
 class function TCryptoFactory.CreateRandomService: ICryptoRandomService;
 begin
   Result := TCryptoRandomService.Create;
+end;
+
+class function TCryptoFactory.CreateCertificateService: ICryptoCertificateService;
+begin
+  Result := TCryptoCertificateService.Create;
+end;
+
+class function TCryptoFactory.CreateSignatureService: ICryptoSignatureService;
+begin
+  Result := TCryptoSignatureService.Create;
 end;
 
 end.

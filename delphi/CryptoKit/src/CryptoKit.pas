@@ -9,10 +9,13 @@ uses
   CryptoKit.Encoding,
   CryptoKit.Facade,
   CryptoKit.Factory,
+  CryptoKit.CryptApi,
   CryptoKit.HashService,
   CryptoKit.KdfService,
   CryptoKit.CipherService,
-  CryptoKit.RandomService;
+  CryptoKit.RandomService,
+  CryptoKit.CertificateService,
+  CryptoKit.SignatureService;
 
 implementation
 

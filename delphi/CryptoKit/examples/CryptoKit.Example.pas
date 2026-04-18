@@ -26,6 +26,9 @@ var
   DecryptedBytes: TBytes;
   HashValue: TBytes;
   HmacValue: TBytes;
+  Certs: TCryptoCertificateArray;
+  Signature: TBytes;
+  Signers: TCryptoCertificateArray;
 begin
   PlainText := 'Delphi CryptoKit sample';
   PlainBytes := TEncoding.UTF8.GetBytes(PlainText);
@@ -45,6 +48,19 @@ begin
   Writeln('Decrypted        : ' + TEncoding.UTF8.GetString(DecryptedBytes));
   Writeln('SHA-256 (hex)    : ' + BytesToHex(HashValue));
   Writeln('HMAC-SHA256 (hex): ' + BytesToHex(HmacValue));
+
+  // УКЭП-сценарий: работаем с сертификатом из личного хранилища.
+  Certs := TCryptoKit.GetPersonalCertificates(True, slCurrentUser);
+  if Length(Certs) > 0 then
+  begin
+    Signature := TCryptoKit.SignDetached(PlainBytes, Certs[0].Encoded);
+    Signers := TCryptoKit.VerifyDetached(PlainBytes, Signature);
+    Writeln('Detached sign len: ' + IntToStr(Length(Signature)));
+    Writeln('Signer subject   : ' + Certs[0].SubjectName);
+    Writeln('Verified signers : ' + IntToStr(Length(Signers)));
+  end
+  else
+    Writeln('No personal certificates with private key found in CurrentUser\MY');
 end;
 
 end.

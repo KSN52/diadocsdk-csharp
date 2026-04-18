@@ -15,10 +15,13 @@ contains
   CryptoKit.BaseService in 'CryptoKit.BaseService.pas',
   CryptoKit.BCryptApi in 'CryptoKit.BCryptApi.pas',
   CryptoKit.BCryptHelpers in 'CryptoKit.BCryptHelpers.pas',
+  CryptoKit.CryptApi in 'CryptoKit.CryptApi.pas',
   CryptoKit.HashService in 'CryptoKit.HashService.pas',
   CryptoKit.KdfService in 'CryptoKit.KdfService.pas',
   CryptoKit.CipherService in 'CryptoKit.CipherService.pas',
   CryptoKit.RandomService in 'CryptoKit.RandomService.pas',
+  CryptoKit.CertificateService in 'CryptoKit.CertificateService.pas',
+  CryptoKit.SignatureService in 'CryptoKit.SignatureService.pas',
   CryptoKit.Encoding in 'CryptoKit.Encoding.pas',
   CryptoKit.Factory in 'CryptoKit.Factory.pas',
   CryptoKit.Facade in 'CryptoKit.Facade.pas';

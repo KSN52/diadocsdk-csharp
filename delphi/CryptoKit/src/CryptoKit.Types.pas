@@ -12,6 +12,18 @@ type
 
   TCryptoCipherAlgorithm = (caAES256_CBC_PKCS7);
 
+  TCertificateStoreLocation = (slCurrentUser, slLocalMachine);
+
+  TCryptoCertificate = record
+    ThumbprintHex: string;
+    SubjectName: string;
+    IssuerName: string;
+    HasPrivateKey: Boolean;
+    Encoded: TBytes;
+  end;
+
+  TCryptoCertificateArray = TArray<TCryptoCertificate>;
+
   TCryptoAesParams = record
     Key: TBytes;
     IV: TBytes;

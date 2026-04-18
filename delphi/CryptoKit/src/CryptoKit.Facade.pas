@@ -14,10 +14,14 @@ type
     class var FKdfService: ICryptoKdfService;
     class var FCipherService: ICryptoCipherService;
     class var FRandomService: ICryptoRandomService;
+    class var FCertificateService: ICryptoCertificateService;
+    class var FSignatureService: ICryptoSignatureService;
     class function HashService: ICryptoHashService; static;
     class function KdfService: ICryptoKdfService; static;
     class function CipherService: ICryptoCipherService; static;
     class function RandomService: ICryptoRandomService; static;
+    class function CertificateService: ICryptoCertificateService; static;
+    class function SignatureService: ICryptoSignatureService; static;
   public
     class function Hash(
       const AData: TBytes;
@@ -44,6 +48,24 @@ type
     ): TBytes; static;
 
     class function RandomBytes(const ACount: Integer): TBytes; static;
+
+    class function GetPersonalCertificates(
+      const AOnlyWithPrivateKey: Boolean;
+      const AStoreLocation: TCertificateStoreLocation = slCurrentUser
+    ): TCryptoCertificateArray; static;
+
+    class function GetCertificateWithPrivateKeyByThumbprint(
+      const AThumbprintHex: string;
+      const AStoreLocation: TCertificateStoreLocation = slCurrentUser
+    ): TCryptoCertificate; static;
+
+    class function SignDetached(
+      const AContent, ACertificateEncoded: TBytes
+    ): TBytes; static;
+
+    class function VerifyDetached(
+      const AContent, ADetachedSignature: TBytes
+    ): TCryptoCertificateArray; static;
   end;
 
 implementation
@@ -77,6 +99,20 @@ begin
   if not Assigned(FRandomService) then
     FRandomService := TCryptoFactory.CreateRandomService;
   Result := FRandomService;
+end;
+
+class function TCryptoKit.CertificateService: ICryptoCertificateService;
+begin
+  if not Assigned(FCertificateService) then
+    FCertificateService := TCryptoFactory.CreateCertificateService;
+  Result := FCertificateService;
+end;
+
+class function TCryptoKit.SignatureService: ICryptoSignatureService;
+begin
+  if not Assigned(FSignatureService) then
+    FSignatureService := TCryptoFactory.CreateSignatureService;
+  Result := FSignatureService;
 end;
 
 class function TCryptoKit.Hash(
@@ -121,6 +157,39 @@ end;
 class function TCryptoKit.RandomBytes(const ACount: Integer): TBytes;
 begin
   Result := RandomService.GetBytes(ACount);
+end;
+
+class function TCryptoKit.GetPersonalCertificates(
+  const AOnlyWithPrivateKey: Boolean;
+  const AStoreLocation: TCertificateStoreLocation
+): TCryptoCertificateArray;
+begin
+  Result := CertificateService.GetPersonalCertificates(AOnlyWithPrivateKey, AStoreLocation);
+end;
+
+class function TCryptoKit.GetCertificateWithPrivateKeyByThumbprint(
+  const AThumbprintHex: string;
+  const AStoreLocation: TCertificateStoreLocation
+): TCryptoCertificate;
+begin
+  Result := CertificateService.GetCertificateWithPrivateKeyByThumbprint(
+    AThumbprintHex,
+    AStoreLocation
+  );
+end;
+
+class function TCryptoKit.SignDetached(
+  const AContent, ACertificateEncoded: TBytes
+): TBytes;
+begin
+  Result := SignatureService.SignDetached(AContent, ACertificateEncoded);
+end;
+
+class function TCryptoKit.VerifyDetached(
+  const AContent, ADetachedSignature: TBytes
+): TCryptoCertificateArray;
+begin
+  Result := SignatureService.VerifyDetached(AContent, ADetachedSignature);
 end;
 
 end.

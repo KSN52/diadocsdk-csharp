@@ -47,6 +47,28 @@ type
     function GetBytes(const ACount: Integer): TBytes;
   end;
 
+  ICryptoCertificateService = interface
+    ['{9117111C-EF94-4D42-9FC0-4CBC8CB0E996}']
+    function GetPersonalCertificates(
+      const AOnlyWithPrivateKey: Boolean;
+      const AStoreLocation: TCertificateStoreLocation = slCurrentUser
+    ): TCryptoCertificateArray;
+    function GetCertificateWithPrivateKeyByThumbprint(
+      const AThumbprintHex: string;
+      const AStoreLocation: TCertificateStoreLocation = slCurrentUser
+    ): TCryptoCertificate;
+  end;
+
+  ICryptoSignatureService = interface
+    ['{81140B8C-5D26-4D09-968D-4D4AC6CA8CF3}']
+    function SignDetached(
+      const AContent, ACertificateEncoded: TBytes
+    ): TBytes;
+    function VerifyDetached(
+      const AContent, ADetachedSignature: TBytes
+    ): TCryptoCertificateArray;
+  end;
+
 implementation
 
 end.
